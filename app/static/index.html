@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#07101f" />
+  <title>خرج — مدیریت مخارج</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <section id="loginScreen" class="login-screen hidden">
+    <div class="login-glow glow-a"></div><div class="login-glow glow-b"></div>
+    <form id="loginForm" class="login-card">
+      <div class="brand-mark large">خ</div>
+      <h1>خرج</h1>
+      <p>مدیریت شخصی مخارج روزانه</p>
+      <label>نام کاربری<input id="loginUsername" autocomplete="username" value="admin" required /></label>
+      <label>رمز عبور<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
+      <button class="primary wide" type="submit">ورود به داشبورد</button>
+      <div id="loginError" class="form-error"></div>
+    </form>
+  </section>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">خ</div><span>Kharj</span></div>
+      <nav id="navMenu">
+        <button class="nav-item active" data-page="dashboard"><span class="nav-icon">⌂</span><span>داشبورد</span></button>
+        <button class="nav-item" data-page="expenses"><span class="nav-icon">▣</span><span>مخارج</span></button>
+        <button class="nav-item" data-page="categories"><span class="nav-icon">⊞</span><span>دسته‌بندی‌ها</span></button>
+        <button class="nav-item" data-page="reports"><span class="nav-icon">⌁</span><span>گزارش‌ها</span></button>
+        <button class="nav-item" data-page="budgets"><span class="nav-icon">◫</span><span>بودجه</span></button>
+        <button class="nav-item" data-page="bills"><span class="nav-icon">◷</span><span>قبوض</span></button>
+        <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span><span>تنظیمات</span></button>
+      </nav>
+      <div class="sidebar-note">
+        <div class="diamond">◇</div>
+        <strong>داده‌های خودت</strong>
+        <p>اطلاعات داخل دیتابیس خصوصی همین سرور ذخیره می‌شود.</p>
+      </div>
+      <button id="logoutBtn" class="nav-item logout"><span class="nav-icon">↪</span><span>خروج</span></button>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <button id="mobileMenu" class="icon-button mobile-only">☰</button>
+        <div class="greeting"><h2 id="greetingText">سلام 👋</h2><p>امروز چه برنامه‌ای برای مدیریت خرج‌هات داری؟</p></div>
+        <div class="top-actions">
+          <button id="monthPicker" class="ghost date-switcher"><span id="periodTitle">—</span><span>⌄</span></button>
+          <button class="primary" data-open-expense><span class="plus">＋</span> ثبت خرج</button>
+          <div class="avatar">ع</div>
+        </div>
+      </header>
+
+      <main>
+        <section id="page-dashboard" class="page active">
+          <div class="kpi-grid">
+            <article class="kpi-card"><div class="kpi-head"><span>مخارج امروز</span><span class="kpi-icon teal">↗</span></div><strong id="kpiToday">۰</strong><small>تومان</small><div class="kpi-foot"><span id="kpiTodayCount">۰ مورد</span></div></article>
+            <article class="kpi-card"><div class="kpi-head"><span>مخارج ماهانه</span><span class="kpi-icon red">⌁</span></div><strong id="kpiMonth">۰</strong><small>تومان</small><div class="kpi-foot"><span id="kpiMonthChange">—</span></div></article>
+            <article class="kpi-card"><div class="kpi-head"><span>بودجه باقی‌مانده</span><span class="kpi-icon amber">◫</span></div><strong id="kpiRemaining">۰</strong><small>تومان</small><div class="mini-progress"><i id="budgetProgress"></i></div><div class="kpi-foot"><span id="kpiBudget">بدون بودجه</span></div></article>
+            <article class="kpi-card"><div class="kpi-head"><span>میانگین روزانه</span><span class="kpi-icon blue">≈</span></div><strong id="kpiAverage">۰</strong><small>تومان</small><div class="kpi-foot"><span>در ماه انتخاب‌شده</span></div></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="panel chart-panel">
+              <div class="panel-title"><div><h3>روند مخارج در ۷ روز گذشته</h3><p>نمای کلی هزینه‌های روزانه</p></div><span class="pill">۷ روز اخیر</span></div>
+              <div class="chart-wrap"><canvas id="weeklyChart"></canvas></div>
+            </article>
+
+            <article class="panel donut-panel">
+              <div class="panel-title"><div><h3>مخارج بر اساس دسته‌بندی</h3><p>سهم هر بخش از این ماه</p></div></div>
+              <div class="donut-layout"><div class="donut" id="donutChart"><div><small>کل مخارج</small><strong id="donutTotal">۰</strong><span>تومان</span></div></div><div id="categoryLegend" class="legend"></div></div>
+            </article>
+
+            <article class="panel side-panel bills-mini">
+              <div class="panel-title"><h3>قبوض پیش رو</h3><button class="text-btn" data-goto="bills">مشاهده همه</button></div>
+              <div id="upcomingBills" class="compact-list"></div>
+            </article>
+
+            <article class="panel recent-panel">
+              <div class="panel-title"><h3>تراکنش‌های اخیر</h3><button class="text-btn" data-goto="expenses">مشاهده همه</button></div>
+              <div id="recentTransactions" class="compact-list"></div>
+            </article>
+
+            <article class="panel insight-panel"><div class="insight-icon">◉</div><div><h3>بینش هوشمند</h3><p id="insightText">بعد از ثبت چند خرج، اینجا الگوی هزینه‌هایت را می‌بینی.</p></div></article>
+
+            <article class="panel budget-panel"><div class="panel-title"><h3>وضعیت بودجه‌ها</h3><button class="text-btn" data-goto="budgets">مشاهده همه</button></div><div id="budgetOverview" class="budget-list"></div></article>
+          </div>
+        </section>
+
+        <section id="page-expenses" class="page">
+          <div class="page-heading"><div><h1>مخارج</h1><p>همه تراکنش‌ها، مرتب و قابل جستجو</p></div><button class="primary" data-open-expense>＋ ثبت خرج</button></div>
+          <div class="panel table-panel">
+            <div class="toolbar"><div class="search-box">⌕<input id="expenseSearch" placeholder="جستجو در شرح یا دسته‌بندی..." /></div><select id="expenseCategoryFilter"><option value="">همه دسته‌بندی‌ها</option></select></div>
+            <div class="table-scroll"><table><thead><tr><th>شرح</th><th>دسته‌بندی</th><th>تاریخ</th><th>مبلغ</th><th></th></tr></thead><tbody id="expensesTable"></tbody></table></div>
+          </div>
+        </section>
+
+        <section id="page-categories" class="page">
+          <div class="page-heading"><div><h1>دسته‌بندی‌ها</h1><p>ساختار مخارجت را خودت تعیین کن</p></div><button class="primary" data-open-category>＋ دسته جدید</button></div>
+          <div id="categoriesGrid" class="category-grid"></div>
+        </section>
+
+        <section id="page-reports" class="page">
+          <div class="page-heading"><div><h1>گزارش‌ها</h1><p>دید بلندمدت روی الگوی خرج کردن</p></div><a class="ghost button-link" href="/api/export.csv">خروجی CSV</a></div>
+          <div class="report-kpis"><div class="report-card"><span>کل مخارج ثبت‌شده</span><strong id="reportTotal">۰</strong><small>تومان</small></div><div class="report-card"><span>تعداد تراکنش</span><strong id="reportCount">۰</strong><small>مورد</small></div><div class="report-card"><span>میانگین هر تراکنش</span><strong id="reportAverage">۰</strong><small>تومان</small></div></div>
+          <article class="panel report-chart"><div class="panel-title"><h3>۶ ماه اخیر</h3></div><div id="monthlyBars" class="bar-chart"></div></article>
+          <article class="panel"><div class="panel-title"><h3>بیشترین خرج بر اساس دسته‌بندی</h3></div><div id="reportCategories" class="rank-list"></div></article>
+        </section>
+
+        <section id="page-budgets" class="page">
+          <div class="page-heading"><div><h1>بودجه</h1><p>برای هر دسته سقف مشخص بگذار</p></div><button class="primary" data-open-budget>＋ تعیین بودجه</button></div>
+          <div id="budgetsGrid" class="budget-cards"></div>
+        </section>
+
+        <section id="page-bills" class="page">
+          <div class="page-heading"><div><h1>قبوض و پرداخت‌های آینده</h1><p>هیچ پرداختی از قلم نیفتد</p></div><button class="primary" data-open-bill>＋ قبض جدید</button></div>
+          <div id="billsList" class="bills-list"></div>
+        </section>
+
+        <section id="page-settings" class="page">
+          <div class="page-heading"><div><h1>تنظیمات</h1><p>تنظیمات شخصی داشبورد</p></div></div>
+          <form id="settingsForm" class="panel settings-form">
+            <div class="form-grid"><label>نام نمایشی<input id="displayName" required /></label><label>بودجه کلی ماهانه (تومان)<input id="monthlyBudget" inputmode="numeric" placeholder="مثلاً 30000000" /></label></div>
+            <div class="settings-info"><span>تاریخ امروز</span><strong id="todayJalali">—</strong></div>
+            <div class="settings-actions"><button class="primary" type="submit">ذخیره تنظیمات</button><a class="ghost button-link" href="/api/export.csv">دانلود خروجی CSV</a></div>
+          </form>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="expenseModal" class="modal hidden"><div class="modal-card"><div class="modal-head"><div><h3>ثبت خرج جدید</h3><p>در چند ثانیه هزینه را ثبت کن</p></div><button class="modal-close">×</button></div><form id="expenseForm"><label class="amount-field">مبلغ (تومان)<input id="expenseAmount" inputmode="numeric" placeholder="0" required autofocus /></label><div class="form-grid"><label>دسته‌بندی<select id="expenseCategory" required></select></label><label>تاریخ شمسی<input id="expenseDate" placeholder="1405/06/01" /></label></div><label>شرح<input id="expenseNote" maxlength="250" placeholder="مثلاً شام، بنزین، خرید..." /></label><button class="primary wide" type="submit">ثبت مخارج</button></form></div></div>
+
+  <div id="categoryModal" class="modal hidden"><div class="modal-card small"><div class="modal-head"><h3>دسته‌بندی جدید</h3><button class="modal-close">×</button></div><form id="categoryForm"><div class="form-grid"><label>آیکن<input id="categoryIcon" value="◌" maxlength="8" /></label><label>رنگ<input id="categoryColor" type="color" value="#5b8cff" /></label></div><label>نام دسته‌بندی<input id="categoryName" required maxlength="50" placeholder="مثلاً سفر" /></label><button class="primary wide" type="submit">ساخت دسته‌بندی</button></form></div></div>
+
+  <div id="budgetModal" class="modal hidden"><div class="modal-card small"><div class="modal-head"><h3>تعیین بودجه ماه</h3><button class="modal-close">×</button></div><form id="budgetForm"><label>دسته‌بندی<select id="budgetCategory" required></select></label><label>سقف بودجه (تومان)<input id="budgetAmount" inputmode="numeric" required /></label><button class="primary wide" type="submit">ذخیره بودجه</button></form></div></div>
+
+  <div id="billModal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h3>قبض / پرداخت آینده</h3><button class="modal-close">×</button></div><form id="billForm"><label>عنوان<input id="billTitle" required placeholder="مثلاً اینترنت منزل" /></label><div class="form-grid"><label>مبلغ (تومان)<input id="billAmount" inputmode="numeric" required /></label><label>تاریخ سررسید شمسی<input id="billDate" placeholder="1405/06/20" required /></label></div><label>دسته‌بندی<select id="billCategory"></select></label><label class="checkbox"><input id="billRecurring" type="checkbox" /><span>هر ماه تکرار شود</span></label><button class="primary wide" type="submit">ثبت پرداخت آینده</button></form></div></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
